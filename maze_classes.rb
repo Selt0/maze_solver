@@ -43,6 +43,31 @@ module MazeClasses
       map.each { |line| string << line.join('') }
       string
     end
+
+    def find_neighbors(point)
+      p_x, p_y = point
+      neighbors = []
+
+      DELTAS.each do |d_x, d_y|
+        neighbor = [(d_x + p_x), (d_y + p_y)]
+        if in_maze?(neighbor) && !(is_wall?(neighbor))
+          neighbors << neighbor
+        end
+      end
+      neighbors
+    end
+
+    def in_maze?(point)
+      x, y = point
+      not_negative = (x >= 0) && (y >= 0)
+      within_bounds = (x <= map[0].length) && (y <= map.length)
+      not_negative && within_bounds
+    end
+
+    def is_wall?(point)
+      x, y = point
+      map[x][y] == '*'
+    end
   end
 
   class MazeSolver
