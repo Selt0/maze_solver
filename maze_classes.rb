@@ -66,7 +66,7 @@ module MazeClasses
 
     def is_wall?(point)
       x, y = point
-      map[x][y] == '*'
+      map[y][x] == '*'
     end
 
     def travel_path(path)
@@ -77,9 +77,9 @@ module MazeClasses
         point = copy_map[y][x]
 
         if point == 'X'
-          puts "This path back-tracks to #{x}. #{y}."
+          puts "This path back-tracks to #{x}, #{y}."
         elsif point == '*'
-          puts "This path hits a wall at #{x}, #{y},"
+          puts "This path hits a wall at #{x}, #{y}."
         else
           copy_map[y][x] = "X"
         end
@@ -107,7 +107,95 @@ module MazeClasses
 
   class MazeSolver
 
-    def initialize
+    attr_reader :maze
+
+    def initialize(maze)
+      @maze = maze
+      reset_values
+    end
+
+    #find distance from point to end of maze
+    def find_distance(point)
+      p_x, p_y = point
+      final_x, final_y = maze.find_end
+      ((p_x - final_x) + (p_y - final_y)).abs
+    end
+
+    def find_manhattan_estimate(point)
+      dist_to_end = find_distance(point)
+      dist_traveled = find_path(point).length
+      f = dist_to_end + dist_traveled
+    end
+
+    #estimates distance traveled and distance to end
+    #picks point that should have minimum sum
+    #does not take the diagonal moves into account
+    def manhattan_heuristic(queue)
+      queue.inject do |chosen_point, point|
+        old_f = find_manhattan_estimate(chosen_point)
+        new_f = find_manhattan_estimate(point)
+        old_f > new_f ? point : chosen_point
+      end
+    end
+
+    def build_branching_paths(heuristic = :manhattan_heuristic)
+      reset_values
+      queue = [@current]
+      visited = [@current]
+
+      until queue.empty? || @current == @maze.find_end
+        @current = self.send(heuristic, queue)
+        queue.delete(@current)
+        visited << @current
+
+        #find open spaces nearby
+        nearby_openings = @maze.find_neighbors(@current)
+
+        #add them to queue
+        nearby_openings.each do |neighbor|
+          unless visited.include?(neighbor) || queue.include?(neighbor)
+            queue << neighbor
+            @branching_paths[neighbor] = @current
+          end
+        end
+      end
+
+      @branching_paths
+    end
+
+    def find_path(goal = @maze.find_end)
+      path = [goal]
+      spot = goal
+      until @branching_paths[spot] == nil
+        path << @branching_paths[spot] 
+        spot = @branching_paths[spot]
+      end
+      path
+    end
+
+    def solve(heuristic = :manhattan_heuristic)
+      build_branching_paths(heuristic)
+      path = find_path
+      @maze.travel_path(path)
+    end
+    
+    private
+
+    def reset_values
+      @branching_paths = {}
+      @current = maze.find_start
     end
   end
+end
+
+
+#test
+if __FILE__ == $PROGRAM_NAME
+  filename = ARGV[0] || "maze1.txt"
+  test_maze = MazeClasses::Maze.new(filename)
+  puts test_maze
+  puts "Start is at #{test_maze.start_idx}"
+  puts "End is at #{test_maze.end_idx}"
+  test_solver = MazeClasses::MazeSolver.new(test_maze)
+  test_solver.solve
 end
