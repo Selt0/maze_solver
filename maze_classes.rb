@@ -68,6 +68,41 @@ module MazeClasses
       x, y = point
       map[x][y] == '*'
     end
+
+    def travel_path(path)
+      puts "Traveling path of #{path.inspect}..."
+      copy_map = deep_dup(map)
+      path.each do |coords|
+        x, y  = coords
+        point = copy_map[y][x]
+
+        if point == 'X'
+          puts "This path back-tracks to #{x}. #{y}."
+        elsif point == '*'
+          puts "This path hits a wall at #{x}, #{y},"
+        else
+          copy_map[y][x] = "X"
+        end
+      end
+      
+      show_path(copy_map)
+    end
+
+    def deep_dup(item)
+      unless item.class == Array
+        item.dup
+      else
+        new_arr = []
+        item.each do |item|
+          new_arr << deep_dup(item)
+        end
+        new_arr
+      end
+    end
+
+    def show_path(map_path)
+      map_path.each { |line| puts line.join('')}
+    end
   end
 
   class MazeSolver
